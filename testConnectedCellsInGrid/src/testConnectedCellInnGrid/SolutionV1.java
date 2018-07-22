@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 import java.util.stream.IntStream;
 
-public class Solution {
+public class SolutionV1 {
 
     // Complete the connectedCell function below.
     static int connectedCell(int[][] matrix) {

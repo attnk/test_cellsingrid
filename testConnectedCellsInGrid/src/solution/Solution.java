@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
 
-public class Solutionn {
+public class Solution {
 
     // Complete the connectedCell function below.
     static int connectedCell(int[][] matrix) {
