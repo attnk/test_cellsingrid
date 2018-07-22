@@ -1,4 +1,4 @@
-#Connected Cells in a Grid
+# Connected Cells in a Grid
 ___
 Projeto utilizado para escrever e testar localmente um algoritmo para resolver o exercício [Connected Cells in a Grid].
 
