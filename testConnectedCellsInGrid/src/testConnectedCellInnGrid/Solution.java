@@ -15,20 +15,29 @@ public class Solution {
 			aux = 0;
     	
     	int[][] countAux = new int[matrix.length][matrix[0].length];
+    	int matrixMaxSlots = (matrix.length*matrix[0].length);
     	
-    	for (int i = 0; i < matrix.length; i++) {
-			for (int j = 0; j < matrix[i].length; j++) {
-				if(matrix[i][j] ==  1) {
-					aux = getLastTotal(matrix, aux, countAux, i, j);
-					aux++;
-				} else {
-					aux = 0;
-				}
-				countAux[i][j] = aux;
-			}
-		}
-        
-        max = Arrays.stream(matrixToArray(matrix, countAux)).max().getAsInt();
+    	if(matrixMaxSlots == Arrays.stream(
+    			matrixToArray(matrixMaxSlots, matrix))
+    			.filter(x -> x == 1).count()) {
+    		
+    		max = matrixMaxSlots;
+    	} else {
+    		for (int i = 0; i < matrix.length; i++) {
+    			for (int j = 0; j < matrix[i].length; j++) {
+    				if(matrix[i][j] ==  1) {
+    					aux = getLastTotal(matrix, aux, countAux, i, j);
+    					aux++;
+    				} else {
+    					aux = 0;
+    				}
+    				countAux[i][j] = aux;
+    			}
+    		}
+    		
+    		max = Arrays.stream(matrixToArray(matrixMaxSlots, countAux)).max().getAsInt();
+    	}
+    	
     	return max;
     }
 
@@ -56,20 +65,25 @@ public class Solution {
 			} else if(matrixColumn > 0 
 					&& matrix[matrixRow][matrixColumn] == 1 
 					&& matrix[matrixRow][matrixColumn-1] == 1) {
+				
 				aux = countAux[matrixRow][matrixColumn-1];
 			}
 		} else if(matrixRow > 0) {
 			if(matrixColumn == 0 
 					&& matrix[matrixRow][matrixColumn] == 1 
 					&& matrix[matrixRow-1][matrixColumn] == 1) {
+				
 				aux = countAux[matrixRow-1][matrixColumn];
 			} else if(matrixColumn > 0 && matrix[matrixRow][matrixColumn] == 1) {
 				if(matrix[matrixRow][matrixColumn-1] == 1) {
 					aux = countAux[matrixRow][matrixColumn-1];
+					
 				} else if(matrix[matrixRow-1][matrixColumn] == 1) {
 					aux = countAux[matrixRow-1][matrixColumn];
+					
 				} else if(matrix[matrixRow-1][matrixColumn-1] == 1) {
 					aux = countAux[matrixRow-1][matrixColumn-1];
+					
 				}
 			}
 		}
@@ -78,20 +92,20 @@ public class Solution {
 
 	/**
 	 * 
+	 * @param arraySize
 	 * @param matrix
-	 * @param countAux
 	 * @return
 	 */
-	private static int[] matrixToArray(int[][] matrix, int[][] countAux) {
-		int[] auxArray = new int[matrix.length*matrix[0].length];
+	private static int[] matrixToArray(int arraySize, int[][] matrix) {
+		int[] auxArray = new int[arraySize];
     	int posAuxArray = 0;
     	
-        for (int i = 0; i < countAux.length; i++) {
-			for (int j = 0; j < countAux[i].length; j++) {
-				System.out.print(countAux[i][j]);
+        for (int i = 0; i < matrix.length; i++) {
+			for (int j = 0; j < matrix[i].length; j++) {
+				System.out.print(matrix[i][j]);
 				System.out.print(" | ");
 				
-				auxArray[posAuxArray] = countAux[i][j];
+				auxArray[posAuxArray] = matrix[i][j];
 				posAuxArray++;
 			}
 			
@@ -112,29 +126,33 @@ public class Solution {
 //        scanner.skip("(\r\n|[\n\r\u2028\u2029\u0085])?");
 
     	int n = 4;
-    	int m = 4;
+    	int m = 5;
     	
         int[][] matrix = new int[n][m];
 
         matrix[0][0] = 1;
         matrix[0][1] = 1;
         matrix[0][2] = 1;
-        matrix[0][3] = 0;
+        matrix[0][3] = 1;
+        matrix[0][4] = 1;
         
-        matrix[1][0] = 0;
-        matrix[1][1] = 0;
+        matrix[1][0] = 1;
+        matrix[1][1] = 1;
         matrix[1][2] = 1;
-        matrix[1][3] = 0;
+        matrix[1][3] = 1;
+        matrix[1][4] = 1;
         
         matrix[2][0] = 1;
-        matrix[2][1] = 0;
-        matrix[2][2] = 0;
+        matrix[2][1] = 1;
+        matrix[2][2] = 1;
         matrix[2][3] = 1;
+        matrix[2][4] = 1;
         
-        matrix[3][0] = 0;
+        matrix[3][0] = 1;
         matrix[3][1] = 1;
-        matrix[3][2] = 0;
-        matrix[3][3] = 0;
+        matrix[3][2] = 1;
+        matrix[3][3] = 1;
+        matrix[3][4] = 1;
         
 //        for (int i = 0; i < n; i++) {
 //            String[] matrixRowItems = scanner.nextLine().split(" ");
