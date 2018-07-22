@@ -34,7 +34,6 @@ public class Solution {
     				countAux[i][j] = aux;
     			}
     		}
-    		
     		max = Arrays.stream(matrixToArray(matrixMaxSlots, countAux)).max().getAsInt();
     	}
     	
@@ -102,14 +101,9 @@ public class Solution {
     	
         for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix[i].length; j++) {
-				System.out.print(matrix[i][j]);
-				System.out.print(" | ");
-				
 				auxArray[posAuxArray] = matrix[i][j];
 				posAuxArray++;
 			}
-			
-			System.out.println();
 		}
 		return auxArray;
 	}
