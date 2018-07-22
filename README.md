@@ -6,9 +6,9 @@ Projeto utilizado para escrever e testar localmente um algoritmo para resolver o
 A classe que contém exatamente o código para ser utilizado como solução está dentro do pacote `solution` (para o caminho completo clique [aqui](https://github.com/attnk/test_cellsingrid/blob/feature/v1/testConnectedCellsInGrid/src/solution/Solution.java)).
 
 **OBS:** A classe [Solution.java], é exatamente uma cópia da classe gerada pelo sistema do HackerRank, sendo que a resposta para a solução solicitada no enunciado está quebrada em 3 (três) métodos:
-	- `connectedCell`
-	- `getLastTotal`
-	- `matrixToArray`
+ - `connectedCell`
+ - `getLastTotal`
+ - `matrixToArray`
 
 Sendo que os métodos `getLastTotal` e `matrixToArray`, são métodos (privados criados após refatoração) criados com a finalidade de diminnuir um pouco a complexidade da leitura e manutenção na solução criada.
 
