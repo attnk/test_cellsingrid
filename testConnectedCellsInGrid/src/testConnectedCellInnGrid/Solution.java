@@ -3,48 +3,102 @@ package testConnectedCellInnGrid;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Scanner;
+import java.util.stream.IntStream;
 
 public class Solution {
 
     // Complete the connectedCell function below.
     static int connectedCell(int[][] matrix) {
     	int max = 0, 
-			aux = 0,  
-			maxRows = matrix.length, 
-			maxColumns = matrix[0].length;
+			aux = 0;
     	
+    	int[][] countAux = new int[matrix.length][matrix[0].length];
     	
     	for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix[i].length; j++) {
 				if(matrix[i][j] ==  1) {
-					if(i == 0) {
-						if(j == 0 && matrix[i][j] == 1) {
-							max++;
-						} else if(j > 0 && matrix[i][j-1] == 1) {
-							max++;
-						}
-					} else if(i > 0) {
-						if(j == 0 && 
-							matrix[i][j] == 1 &&
-							matrix[i-1][j] == 1) {
-							
-							max++;
-						} else if(j > 0 && 
-								matrix[i][j] == 1 && 
-								(matrix[i][j-1] == 1 || 
-								matrix[i-1][j] == 1 ||
-								matrix[i-1][j-1] == 1)) {
-							
-							max++;
-						}
-					}
+					aux = getLastTotal(matrix, aux, countAux, i, j);
+					aux++;
+				} else {
+					aux = 0;
+				}
+				countAux[i][j] = aux;
+			}
+		}
+        
+        max = Arrays.stream(matrixToArray(matrix, countAux)).max().getAsInt();
+    	return max;
+    }
+
+    /**
+     * 
+     * @param matrix
+     * @param aux
+     * @param countAux
+     * @param matrixRow
+     * @param matrixColumn
+     * @return
+     */
+	private static int getLastTotal(
+			int[][] matrix, 
+			int aux, 
+			int[][] countAux, 
+			int matrixRow, 
+			int matrixColumn) {
+		
+		if(matrixRow == 0) {
+			if(matrixColumn == 0 ) {
+				if (matrix[matrixRow][matrixColumn] == 1) {
+					aux = countAux[matrixRow][matrixColumn];
+				}
+			} else if(matrixColumn > 0 
+					&& matrix[matrixRow][matrixColumn] == 1 
+					&& matrix[matrixRow][matrixColumn-1] == 1) {
+				aux = countAux[matrixRow][matrixColumn-1];
+			}
+		} else if(matrixRow > 0) {
+			if(matrixColumn == 0 
+					&& matrix[matrixRow][matrixColumn] == 1 
+					&& matrix[matrixRow-1][matrixColumn] == 1) {
+				aux = countAux[matrixRow-1][matrixColumn];
+			} else if(matrixColumn > 0 && matrix[matrixRow][matrixColumn] == 1) {
+				if(matrix[matrixRow][matrixColumn-1] == 1) {
+					aux = countAux[matrixRow][matrixColumn-1];
+				} else if(matrix[matrixRow-1][matrixColumn] == 1) {
+					aux = countAux[matrixRow-1][matrixColumn];
+				} else if(matrix[matrixRow-1][matrixColumn-1] == 1) {
+					aux = countAux[matrixRow-1][matrixColumn-1];
 				}
 			}
 		}
+		return aux;
+	}
+
+	/**
+	 * 
+	 * @param matrix
+	 * @param countAux
+	 * @return
+	 */
+	private static int[] matrixToArray(int[][] matrix, int[][] countAux) {
+		int[] auxArray = new int[matrix.length*matrix[0].length];
+    	int posAuxArray = 0;
     	
-    	return max;
-    }
+        for (int i = 0; i < countAux.length; i++) {
+			for (int j = 0; j < countAux[i].length; j++) {
+				System.out.print(countAux[i][j]);
+				System.out.print(" | ");
+				
+				auxArray[posAuxArray] = countAux[i][j];
+				posAuxArray++;
+			}
+			
+			System.out.println();
+		}
+		return auxArray;
+	}
 
 //    private static final Scanner scanner = new Scanner(System.in);
 
@@ -100,6 +154,8 @@ public class Solution {
 			}
 			System.out.println();
 		}
+
+    	System.out.println("\n");
         
         // para o teste aqui deveria ser result = 5
         int result = connectedCell(matrix);
