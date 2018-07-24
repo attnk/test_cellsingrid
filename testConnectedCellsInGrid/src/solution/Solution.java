@@ -44,49 +44,56 @@ public class Solution {
      * @param matrix
      * @param aux
      * @param countAux
-     * @param matrixRow
-     * @param matrixColumn
+     * @param row
+     * @param column
      * @return
      */
     private static int getLastTotal(
-            int[][] matrix, 
-            int aux, 
-            int[][] countAux, 
-            int matrixRow, 
-            int matrixColumn) {
-        
-        if(matrixRow == 0) {
-            if(matrixColumn == 0 ) {
-                if (matrix[matrixRow][matrixColumn] == 1) {
-                    aux = countAux[matrixRow][matrixColumn];
-                }
-            } else if(matrixColumn > 0 
-                    && matrix[matrixRow][matrixColumn] == 1 
-                    && matrix[matrixRow][matrixColumn-1] == 1) {
-                
-                aux = countAux[matrixRow][matrixColumn-1];
-            }
-        } else if(matrixRow > 0) {
-            if(matrixColumn == 0 
-                    && matrix[matrixRow][matrixColumn] == 1 
-                    && matrix[matrixRow-1][matrixColumn] == 1) {
-                
-                aux = countAux[matrixRow-1][matrixColumn];
-            } else if(matrixColumn > 0 && matrix[matrixRow][matrixColumn] == 1) {
-                if(matrix[matrixRow][matrixColumn-1] == 1) {
-                    aux = countAux[matrixRow][matrixColumn-1];
-                    
-                } else if(matrix[matrixRow-1][matrixColumn] == 1) {
-                    aux = countAux[matrixRow-1][matrixColumn];
-                    
-                } else if(matrix[matrixRow-1][matrixColumn-1] == 1) {
-                    aux = countAux[matrixRow-1][matrixColumn-1];
-                    
-                }
-            }
-        }
-        return aux;
-    }
+			int[][] matrix, 
+			int aux, 
+			int[][] countAux, 
+			int row, 
+			int column) {
+		
+		int maxColumn = matrix[row].length;
+		
+		if(row == 0) {
+			if(column == 0 && matrix[row][column] == 1) {
+				aux = countAux[row][column];
+				
+			} else if(column > 0 && matrix[row][column] == 1) {
+				if(matrix[row][column-1] == 1) {
+					aux = countAux[row][column-1];
+					
+				}
+			}
+		} else if(row > 0) {
+			if(column == 0 && matrix[row][column] == 1) { 
+				if(matrix[row-1][column] == 1) {
+					aux = countAux[row-1][maxColumn-1] <= 1 ?
+							countAux[row-1][column] : countAux[row-1][maxColumn-1];
+							
+				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					aux = countAux[row-1][column+1];
+				}
+			} else if(column > 0 && matrix[row][column] == 1) {
+				if(matrix[row][column-1] == 1) {
+					aux = countAux[row][column-1];
+					
+				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					aux = countAux[row-1][column+1];
+					
+				} else if(matrix[row-1][column] == 1) {
+					aux = countAux[row-1][column];
+					
+				} else if(matrix[row-1][column-1] == 1) {
+					aux = countAux[row-1][column-1];
+					
+				} 
+			}
+		}
+		return aux;
+	}
 
     /**
      * 

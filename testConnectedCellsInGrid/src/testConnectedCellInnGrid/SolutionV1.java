@@ -17,12 +17,12 @@ public class SolutionV1 {
     	int[][] countAux = new int[matrix.length][matrix[0].length];
     	int matrixMaxSlots = (matrix.length*matrix[0].length);
     	
-    	if(matrixMaxSlots == Arrays.stream(
-    			matrixToArray(matrixMaxSlots, matrix))
-    			.filter(x -> x == 1).count()) {
-    		
-    		max = matrixMaxSlots;
-    	} else {
+//    	if(matrixMaxSlots == Arrays.stream(
+//    			matrixToArray(matrixMaxSlots, matrix))
+//    			.filter(x -> x == 1).count()) {
+//    		
+//    		max = matrixMaxSlots;
+//    	} else {
     		for (int i = 0; i < matrix.length; i++) {
     			for (int j = 0; j < matrix[i].length; j++) {
     				if(matrix[i][j] ==  1) {
@@ -35,7 +35,7 @@ public class SolutionV1 {
     			}
     		}
     		max = Arrays.stream(matrixToArray(matrixMaxSlots, countAux)).max().getAsInt();
-    	}
+//    	}
     	
     	return max;
     }
@@ -43,50 +43,80 @@ public class SolutionV1 {
     /**
      * 
      * @param matrix
-     * @param aux
+     * @param count
      * @param countAux
-     * @param matrixRow
-     * @param matrixColumn
+     * @param row
+     * @param column
      * @return
      */
 	private static int getLastTotal(
 			int[][] matrix, 
-			int aux, 
+			int count, 
 			int[][] countAux, 
-			int matrixRow, 
-			int matrixColumn) {
+			int row, 
+			int column) {
 		
-		if(matrixRow == 0) {
-			if(matrixColumn == 0 ) {
-				if (matrix[matrixRow][matrixColumn] == 1) {
-					aux = countAux[matrixRow][matrixColumn];
+		int maxColumn = matrix[row].length;
+		
+		if(row == 0) {
+			if(column == 0 && matrix[row][column] == 1) {
+				count = countAux[row][column];
+				
+			} else if(column > 0 && matrix[row][column] == 1) {
+				if(matrix[row][column-1] == 1) {
+					count = countAux[row][column-1];
+					
 				}
-			} else if(matrixColumn > 0 
-					&& matrix[matrixRow][matrixColumn] == 1 
-					&& matrix[matrixRow][matrixColumn-1] == 1) {
-				
-				aux = countAux[matrixRow][matrixColumn-1];
 			}
-		} else if(matrixRow > 0) {
-			if(matrixColumn == 0 
-					&& matrix[matrixRow][matrixColumn] == 1 
-					&& matrix[matrixRow-1][matrixColumn] == 1) {
+		} else if(row > 0) {
+			if(column == 0 && matrix[row][column] == 1) { 
+				if(matrix[row-1][column] == 1) {
+					count = countAux[row-1][maxColumn-1] <= 1 ?
+							countAux[row-1][column] : countAux[row-1][maxColumn-1];
+							
+				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					count = countAux[row-1][maxColumn-1] <= 1 ? 
+							countAux[row-1][column+1] : countAux[row-1][maxColumn-1];
+				}
+			} else if(column > 0 && matrix[row][column] == 1) {
 				
-				aux = countAux[matrixRow-1][matrixColumn];
-			} else if(matrixColumn > 0 && matrix[matrixRow][matrixColumn] == 1) {
-				if(matrix[matrixRow][matrixColumn-1] == 1) {
-					aux = countAux[matrixRow][matrixColumn-1];
+				if(matrix[row][column-1] == 1) {
+					count = countAux[row][column-1];
 					
-				} else if(matrix[matrixRow-1][matrixColumn] == 1) {
-					aux = countAux[matrixRow-1][matrixColumn];
+				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					count = countAux[row-1][column+1];
 					
-				} else if(matrix[matrixRow-1][matrixColumn-1] == 1) {
-					aux = countAux[matrixRow-1][matrixColumn-1];
+				} else {
+					// verificar se já existe alguém contabilizado
+					int aux = 0, 
+						position = column-1;
 					
+					while(position >= 0) {
+						if(matrix[row][position] == 0) {
+							aux++;
+						}
+						position--;
+					}
+					
+					for(int i = (column - aux); i < aux; i++) {
+						if(matrix[row-1][i] == 1 && count < countAux[row][i > 0 ? i-1 : i]) {
+								count = countAux[row][i > 0 ? i-1 : i];
+						}
+					}
+					
+					if(count == 0) {
+						if(matrix[row-1][column] == 1) {
+							count = countAux[row-1][column];
+							
+						} else if(matrix[row-1][column-1] == 1) {
+							count = countAux[row-1][column-1];
+							
+						} 
+					}
 				}
 			}
 		}
-		return aux;
+		return count;
 	}
 
 	/**
@@ -101,10 +131,16 @@ public class SolutionV1 {
     	
         for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix[i].length; j++) {
+				System.out.print(matrix[i][j]);
+				System.out.print(" | ");
+				
 				auxArray[posAuxArray] = matrix[i][j];
 				posAuxArray++;
 			}
+			System.out.println();
 		}
+        
+        
 		return auxArray;
 	}
 
@@ -119,34 +155,40 @@ public class SolutionV1 {
 //        int m = scanner.nextInt();
 //        scanner.skip("(\r\n|[\n\r\u2028\u2029\u0085])?");
 
-    	int n = 4;
+    	int n = 5;
     	int m = 5;
     	
         int[][] matrix = new int[n][m];
 
-        matrix[0][0] = 1;
+        matrix[0][0] = 0;
         matrix[0][1] = 1;
         matrix[0][2] = 1;
         matrix[0][3] = 1;
         matrix[0][4] = 1;
         
         matrix[1][0] = 1;
-        matrix[1][1] = 1;
-        matrix[1][2] = 1;
-        matrix[1][3] = 1;
+        matrix[1][1] = 0;
+        matrix[1][2] = 0;
+        matrix[1][3] = 0;
         matrix[1][4] = 1;
         
         matrix[2][0] = 1;
         matrix[2][1] = 1;
-        matrix[2][2] = 1;
+        matrix[2][2] = 0;
         matrix[2][3] = 1;
-        matrix[2][4] = 1;
+        matrix[2][4] = 0;
         
-        matrix[3][0] = 1;
+        matrix[3][0] = 0;
         matrix[3][1] = 1;
-        matrix[3][2] = 1;
+        matrix[3][2] = 0;
         matrix[3][3] = 1;
         matrix[3][4] = 1;
+        
+        matrix[4][0] = 0;
+        matrix[4][1] = 1;
+        matrix[4][2] = 1;
+        matrix[4][3] = 1;
+        matrix[4][4] = 0;
         
 //        for (int i = 0; i < n; i++) {
 //            String[] matrixRowItems = scanner.nextLine().split(" ");
