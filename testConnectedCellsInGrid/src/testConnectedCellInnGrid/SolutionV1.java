@@ -3,6 +3,8 @@ package testConnectedCellInnGrid;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -21,7 +23,6 @@ public class SolutionV1 {
      */
 	private static int getLastTotal(
 			int[][] matrix, 
-			int count, 
 			int[][] countAux, 
 			int row, 
 			int column,
@@ -29,6 +30,7 @@ public class SolutionV1 {
 		
 		int maxColumn = matrix[row].length;
 		Cell cell = new Cell(row, column);
+		int count = 0;
 		
 		if(row == 0) {
 			if(column == 0 && matrix[row][column] == 1) {
@@ -41,7 +43,7 @@ public class SolutionV1 {
 					count = countAux[row][column-1];
 					
 				} else {
-					cell.setGroup(getLastGridNumber(cells, cell));
+					cell.setGroup(getLastGridNumber(cells, cell)+1);
 				}
 			}
 		} else if(row > 0) {
@@ -66,29 +68,34 @@ public class SolutionV1 {
 					}
 				}
 			} else if(column > 0 && matrix[row][column] == 1) {
-				List<Cell> listAux = new ArrayList<>();
-				Cell cellAux = null;
+				Cell cellAux = Collections.max(cells, Comparator.comparing(Cell::getCount));
 				
 				if(matrix[row][column-1] == 1) {
 					cell.setGroup(getGroupTo(row, column-1, cells));
 					count = countAux[row][column-1];
-					
-				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
-					listAux = cells.stream().filter(c -> c.getGroup() == 1).collect(Collectors.toList());
-					cellAux = listAux.get(listAux.size()-1);
-					
-					if(cellAux.getGroup() == getGroupTo(row-1, column, cells)) {
+				} 
+				
+				if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					if(cellAux.getGroup() == getGroupTo(row-1, column+1, cells)) {
 						cell.setGroup(getGroupTo(cellAux.getRow(), cellAux.getColumn(), cells));
 						count = countAux[cellAux.getRow()][cellAux.getColumn()];
 					} else {
-						cell.setGroup(getGroupTo(row-1, column, cells));
+						cell.setGroup(getGroupTo(row-1, column+1, cells));
 						count = countAux[row-1][column+1];
 					}
 					
-				} else if(matrix[row-1][column] == 1) {
-					listAux = cells.stream().filter(c -> c.getGroup() == 1).collect(Collectors.toList());
-					cellAux = listAux.get(listAux.size()-1);
-					
+					if(matrix[row][column-1] == 1) {
+						countAux[row][column-1] = count + 2;
+						
+						cells.stream()
+						.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+						.findFirst()
+						.get()
+						.setGroup(cell.getGroup());
+					}
+				} 
+				
+				if(matrix[row-1][column] == 1) {
 					if(cellAux.getGroup() == getGroupTo(row-1, column, cells)) {
 						cell.setGroup(getGroupTo(cellAux.getRow(), cellAux.getColumn(), cells));
 						count = countAux[cellAux.getRow()][cellAux.getColumn()];
@@ -97,16 +104,34 @@ public class SolutionV1 {
 						count = countAux[row-1][column];
 					}
 					
-				} else if(matrix[row-1][column-1] == 1) {
-					listAux = cells.stream().filter(c -> c.getGroup() == 1).collect(Collectors.toList());
-					cellAux = listAux.get(listAux.size()-1);
-					
-					if(cellAux.getGroup() == getGroupTo(row-1, column, cells)) {
+					if(matrix[row][column-1] == 1) {
+						countAux[row][column-1] = count + 2;
+						
+						cells.stream()
+						.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+						.findFirst()
+						.get()
+						.setGroup(cell.getGroup());
+					}
+				} 
+				
+				if(matrix[row-1][column-1] == 1) {
+					if(cellAux.getGroup() == getGroupTo(row-1, column-1, cells)) {
 						cell.setGroup(getGroupTo(cellAux.getRow(), cellAux.getColumn(), cells));
 						count = countAux[cellAux.getRow()][cellAux.getColumn()];
 					} else {
-						cell.setGroup(getGroupTo(row-1, column, cells));
+						cell.setGroup(getGroupTo(row-1, column-1, cells));
 						count = countAux[row-1][column-1];
+					}
+					
+					if(matrix[row][column-1] == 1) {
+						countAux[row][column-1] = count + 2;
+						
+						cells.stream()
+						.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+						.findFirst()
+						.get()
+						.setGroup(cell.getGroup());
 					}
 				} 
 			}
@@ -187,6 +212,7 @@ public class SolutionV1 {
 		private int column;
 		private int row;
 		private int group;
+		private int count;
 		
 		public Cell(int row, int column) {
 			this.row = row;
@@ -209,6 +235,14 @@ public class SolutionV1 {
 		public void setGroup(int group) {
 			this.group = group;
 		}
+
+		public int getCount() {
+			return count;
+		}
+
+		public void setCount(int count) {
+			this.count = count;
+		}
 	}
 	
     // Complete the connectedCell function below.
@@ -216,7 +250,7 @@ public class SolutionV1 {
     	int max = 0, 
 			aux = 0;
     	
-    	List<Cell> cellls = new ArrayList<>();
+    	List<Cell> cells = new ArrayList<>();
     	
     	int[][] countAux = new int[matrix.length][matrix[0].length];
     	int matrixMaxSlots = (matrix.length*matrix[0].length);
@@ -224,8 +258,9 @@ public class SolutionV1 {
 		for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix[i].length; j++) {
 				if(matrix[i][j] ==  1) {
-					aux = getLastTotal(matrix, aux, countAux, i, j, cellls);
+					aux = getLastTotal(matrix, countAux, i, j, cells);
 					aux++;
+					cells.get(cells.size()-1).setCount(aux);
 				} else {
 					aux = 0;
 				}
@@ -249,11 +284,12 @@ public class SolutionV1 {
 //        int m = scanner.nextInt();
 //        scanner.skip("(\r\n|[\n\r\u2028\u2029\u0085])?");
 
-    	int n = 5;
+    	int n = 7;
     	int m = 5;
     	
         int[][] matrix = new int[n][m];
-
+        
+        // ------------- 5
 //        matrix[0][0] = 1;
 //        matrix[0][1] = 1;
 //        matrix[0][2] = 0;
@@ -286,35 +322,80 @@ public class SolutionV1 {
         
         
         // -------------- 15 
-        matrix[0][0] = 0;
-        matrix[0][1] = 1;
-        matrix[0][2] = 1;
-        matrix[0][3] = 1;
-        matrix[0][4] = 1;
+//        matrix[0][0] = 0;
+//        matrix[0][1] = 1;
+//        matrix[0][2] = 1;
+//        matrix[0][3] = 1;
+//        matrix[0][4] = 1;
+//        
+//        matrix[1][0] = 1;
+//        matrix[1][1] = 0;
+//        matrix[1][2] = 0;
+//        matrix[1][3] = 0;
+//        matrix[1][4] = 1;
+//        
+//        matrix[2][0] = 1;
+//        matrix[2][1] = 1;
+//        matrix[2][2] = 0;
+//        matrix[2][3] = 1;
+//        matrix[2][4] = 0;
+//        
+//        matrix[3][0] = 0;
+//        matrix[3][1] = 1;
+//        matrix[3][2] = 0;
+//        matrix[3][3] = 1;
+//        matrix[3][4] = 1;
+//        
+//        matrix[4][0] = 0;
+//        matrix[4][1] = 1;
+//        matrix[4][2] = 1;
+//        matrix[4][3] = 1;
+//        matrix[4][4] = 0;
         
-        matrix[1][0] = 1;
-        matrix[1][1] = 0;
-        matrix[1][2] = 0;
-        matrix[1][3] = 0;
-        matrix[1][4] = 1;
-        
-        matrix[2][0] = 1;
-        matrix[2][1] = 1;
-        matrix[2][2] = 0;
-        matrix[2][3] = 1;
-        matrix[2][4] = 0;
-        
-        matrix[3][0] = 0;
-        matrix[3][1] = 1;
-        matrix[3][2] = 0;
-        matrix[3][3] = 1;
-        matrix[3][4] = 1;
-        
-        matrix[4][0] = 0;
-        matrix[4][1] = 1;
-        matrix[4][2] = 1;
-        matrix[4][3] = 1;
-        matrix[4][4] = 0;
+
+        // ------------- 9
+        matrix[0][0] = 1;
+		matrix[0][1] = 1;
+		matrix[0][2] = 1;
+		matrix[0][3] = 0;
+		matrix[0][4] = 1;
+		
+		matrix[1][0] = 0;
+		matrix[1][1] = 0;
+		matrix[1][2] = 1;
+		matrix[1][3] = 0;
+		matrix[1][4] = 0;
+		  
+		matrix[2][0] = 1;
+		matrix[2][1] = 1;
+		matrix[2][2] = 0;
+		matrix[2][3] = 1;
+		matrix[2][4] = 0;
+		  
+		matrix[3][0] = 0;
+		matrix[3][1] = 1;
+		matrix[3][2] = 1;
+		matrix[3][3] = 0;
+		matrix[3][4] = 0;
+		  
+		matrix[4][0] = 0;
+		matrix[4][1] = 0;
+		matrix[4][2] = 0;
+		matrix[4][3] = 0;
+		matrix[4][4] = 0;
+		 
+		matrix[5][0] = 0;
+		matrix[5][1] = 1;
+		matrix[5][2] = 0;
+		matrix[5][3] = 0;
+		matrix[5][4] = 0;
+		 
+		matrix[6][0] = 0;
+		matrix[6][1] = 0;
+		matrix[6][2] = 1;
+		matrix[6][3] = 1;
+		matrix[6][4] = 0;
+      
         
         
 //        for (int i = 0; i < n; i++) {
