@@ -1,93 +1,38 @@
 package testConnectedCellInnGrid;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Scanner;
-import java.util.stream.IntStream;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 public class SolutionV1 {
 
-    // Complete the connectedCell function below.
-    static int connectedCell(int[][] matrix) {
-    	int max = 0, 
-			aux = 0;
-    	
-    	int[][] countAux = new int[matrix.length][matrix[0].length];
-    	int matrixMaxSlots = (matrix.length*matrix[0].length);
-    	
-    	if(matrixMaxSlots == Arrays.stream(
-    			matrixToArray(matrixMaxSlots, matrix))
-    			.filter(x -> x == 1).count()) {
-    		
-    		max = matrixMaxSlots;
-    	} else {
-    		for (int i = 0; i < matrix.length; i++) {
-    			for (int j = 0; j < matrix[i].length; j++) {
-    				if(matrix[i][j] ==  1) {
-    					aux = getLastTotal(matrix, aux, countAux, i, j);
-    					aux++;
-    				} else {
-    					aux = 0;
-    				}
-    				countAux[i][j] = aux;
-    			}
-    		}
-    		max = Arrays.stream(matrixToArray(matrixMaxSlots, countAux)).max().getAsInt();
-    	}
-    	
-    	return max;
-    }
-
-    /**
-     * 
-     * @param matrix
-     * @param aux
-     * @param countAux
-     * @param matrixRow
-     * @param matrixColumn
-     * @return
-     */
-	private static int getLastTotal(
-			int[][] matrix, 
-			int aux, 
-			int[][] countAux, 
-			int matrixRow, 
-			int matrixColumn) {
+	/**
+	 * 
+	 * @param row
+	 * @param column
+	 * @param cells
+	 * @return
+	 */
+	private static int getGroupTo(int row, int column, List<Cell> cells) {
+		int result;
 		
-		if(matrixRow == 0) {
-			if(matrixColumn == 0 ) {
-				if (matrix[matrixRow][matrixColumn] == 1) {
-					aux = countAux[matrixRow][matrixColumn];
-				}
-			} else if(matrixColumn > 0 
-					&& matrix[matrixRow][matrixColumn] == 1 
-					&& matrix[matrixRow][matrixColumn-1] == 1) {
-				
-				aux = countAux[matrixRow][matrixColumn-1];
-			}
-		} else if(matrixRow > 0) {
-			if(matrixColumn == 0 
-					&& matrix[matrixRow][matrixColumn] == 1 
-					&& matrix[matrixRow-1][matrixColumn] == 1) {
-				
-				aux = countAux[matrixRow-1][matrixColumn];
-			} else if(matrixColumn > 0 && matrix[matrixRow][matrixColumn] == 1) {
-				if(matrix[matrixRow][matrixColumn-1] == 1) {
-					aux = countAux[matrixRow][matrixColumn-1];
-					
-				} else if(matrix[matrixRow-1][matrixColumn] == 1) {
-					aux = countAux[matrixRow-1][matrixColumn];
-					
-				} else if(matrix[matrixRow-1][matrixColumn-1] == 1) {
-					aux = countAux[matrixRow-1][matrixColumn-1];
-					
-				}
-			}
+		try {
+			result = cells.stream()
+					.filter(c -> c.getRow() == row && c.getColumn() == column)
+					.findFirst()
+					.get().getGroup();
+			
+		} catch (NoSuchElementException e) {
+			result = cells.stream().mapToInt(Cell::getGroup).max().getAsInt()+1;
 		}
-		return aux;
+		
+		return result;
 	}
+
 
 	/**
 	 * 
@@ -101,12 +46,247 @@ public class SolutionV1 {
     	
         for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix[i].length; j++) {
+				System.out.print(matrix[i][j]);
+				System.out.print(" | ");
+				
 				auxArray[posAuxArray] = matrix[i][j];
 				posAuxArray++;
 			}
+			System.out.println();
 		}
+        
 		return auxArray;
 	}
+
+	/**
+	 * 
+	 * @param cells
+	 */
+	private static int getLastGroupNumber(List<Cell> cells) {
+		int group = 0;
+		
+		if(cells.isEmpty()) {
+			group = 1;
+		} else {
+			group = cells.get(cells.size()-1).getGroup();
+		}
+		
+		return group;
+	}
+	
+	private static class Cell{
+		
+		private int column;
+		private int row;
+		private int group;
+		private int count;
+		
+		public Cell(int row, int column) {
+			this.row = row;
+			this.column = column;
+			this.group = 0;
+		}
+
+		public int getColumn() {
+			return column;
+		}
+		
+		public int getRow() {
+			return row;
+		}
+		
+		public int getGroup() {
+			return group;
+		}
+		
+		public void setGroup(int group) {
+			this.group = group;
+		}
+
+		public int getCount() {
+			return count;
+		}
+
+		public void setCount(int count) {
+			this.count = count;
+		}
+	}
+	
+	/**
+     * 
+     * @param matrix
+     * @param count
+     * @param countAux
+     * @param row
+     * @param column
+     * @param cells
+     * @return
+     */
+	private static int getLastTotal(
+			int[][] matrix, 
+			int[][] countAux, 
+			int row, 
+			int column,
+			List<Cell> cells) {
+		
+		int maxColumn = matrix[row].length;
+		Cell cell = new Cell(row, column);
+		int lastTotal = 0;
+		
+		if(row == 0) {
+			if(column == 0 && matrix[row][column] == 1) {
+				cell.setGroup(1);
+				lastTotal = countAux[row][column];
+				
+			} else if(column > 0 && matrix[row][column] == 1) {
+				if(matrix[row][column-1] == 1) {
+					cell.setGroup(getGroupTo(row, column-1, cells));
+					lastTotal = countAux[row][column-1];
+					
+				} else {
+					cell.setGroup(getLastGroupNumber(cells)+1);
+				}
+			}
+		} else if(row > 0) {
+			if(column == 0 && matrix[row][column] == 1) { 
+				if(matrix[row-1][column] == 1) {
+					if(countAux[row-1][maxColumn-1] <= 1) {
+						cell.setGroup(getGroupTo(row-1, column, cells));
+						lastTotal = countAux[row-1][column];
+						
+					} else {
+						cell.setGroup(getGroupTo(row-1, maxColumn-1, cells));
+						lastTotal = countAux[row-1][maxColumn-1];
+					}
+				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					if(countAux[row-1][maxColumn-1] <= 1) {
+						cell.setGroup(getGroupTo(row-1, column+1, cells));
+						lastTotal = countAux[row-1][column+1];
+						
+					} else {
+						cell.setGroup(getGroupTo(row-1, maxColumn-1, cells));
+						lastTotal = countAux[row-1][maxColumn-1];
+					}
+				} else {
+					cell.setGroup(getLastGroupNumber(cells)+1);
+				}
+			} else if(column > 0 && matrix[row][column] == 1) {
+				Cell cellMaxCount = Collections.max(cells, Comparator.comparing(Cell::getCount));
+				
+				if(matrix[row][column-1] == 1) {
+					cell.setGroup(getGroupTo(row, column-1, cells));
+					lastTotal = countAux[row][column-1];
+					
+					if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+						if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
+							cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+							lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+						} 
+						
+						if(getGroupTo(row, column-1, cells) != getGroupTo(row-1, column+1, cells)) {
+							countAux[row][column-1] = lastTotal + 2;
+							
+							cells.stream()
+							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+							.findFirst()
+							.get()
+							.setGroup(cell.getGroup());
+							
+							cells.stream()
+							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+							.findFirst()
+							.get().setCount(countAux[row][column-1]);
+							
+							cell.setGroup(getGroupTo(row-1, column+1, cells));
+							lastTotal = countAux[row-1][column+1];
+						}
+						
+					} else if(matrix[row-1][column] == 1) {
+						if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
+							cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+							lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+						} 
+
+						if(getGroupTo(row, column-1, cells) != getGroupTo(row-1, column, cells)) {
+							countAux[row][column-1] = lastTotal + 2;
+							
+							cells.stream()
+							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+							.findFirst()
+							.get()
+							.setGroup(cell.getGroup());
+							
+							cells.stream()
+							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+							.findFirst()
+							.get().setCount(countAux[row][column-1]);
+							
+							cell.setGroup(getGroupTo(row-1, column, cells));
+							lastTotal = countAux[row-1][column];
+						}
+					}
+					
+				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
+						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+					} else {
+						cell.setGroup(getGroupTo(row-1, column+1, cells));
+						lastTotal = countAux[row-1][column+1];
+					}
+				} else if(matrix[row-1][column] == 1) {
+					if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
+						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+					} else {
+						cell.setGroup(getGroupTo(row-1, column, cells));
+						lastTotal = countAux[row-1][column];
+					}
+				} else if(matrix[row-1][column-1] == 1) {
+					if(cellMaxCount.getGroup() == getGroupTo(row-1, column-1, cells)) {
+						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+					} else {
+						cell.setGroup(getGroupTo(row-1, column-1, cells));
+						lastTotal = countAux[row-1][column-1];
+					}
+				} else {
+					cell.setGroup(getLastGroupNumber(cells)+1);
+				}
+			}
+		}
+		cells.add(cell);
+		
+		return lastTotal;
+	}
+	
+    // Complete the connectedCell function below.
+    static int connectedCell(int[][] matrix) {
+    	int max = 0, 
+			aux = 0;
+    	
+    	List<Cell> cells = new ArrayList<>();
+    	
+    	int[][] countAux = new int[matrix.length][matrix[0].length];
+    	int matrixMaxSlots = (matrix.length*matrix[0].length);
+    	
+		for (int i = 0; i < matrix.length; i++) {
+			for (int j = 0; j < matrix[i].length; j++) {
+				if(matrix[i][j] ==  1) {
+					aux = getLastTotal(matrix, countAux, i, j, cells);
+					aux++;
+					cells.get(cells.size()-1).setCount(aux);
+				} else {
+					aux = 0;
+				}
+				countAux[i][j] = aux;
+			}
+			aux = 0;
+		}
+		max = Arrays.stream(matrixToArray(matrixMaxSlots, countAux)).max().getAsInt();
+    	
+    	return max;
+    }
 
 //    private static final Scanner scanner = new Scanner(System.in);
 
@@ -119,34 +299,198 @@ public class SolutionV1 {
 //        int m = scanner.nextInt();
 //        scanner.skip("(\r\n|[\n\r\u2028\u2029\u0085])?");
 
-    	int n = 4;
-    	int m = 5;
+    	int n = 8;
+    	int m = 9;
     	
         int[][] matrix = new int[n][m];
+        
+        // ------------- 5
+//        matrix[0][0] = 1;
+//        matrix[0][1] = 1;
+//        matrix[0][2] = 0;
+//        matrix[0][3] = 0;
+//        matrix[0][4] = 0;
+//        
+//        matrix[1][0] = 0;
+//        matrix[1][1] = 1;
+//        matrix[1][2] = 1;
+//        matrix[1][3] = 0;
+//        matrix[1][4] = 0;
+//        
+//        matrix[2][0] = 0;
+//        matrix[2][1] = 0;
+//        matrix[2][2] = 1;
+//        matrix[2][3] = 0;
+//        matrix[2][4] = 1;
+//        
+//        matrix[3][0] = 1;
+//        matrix[3][1] = 0;
+//        matrix[3][2] = 0;
+//        matrix[3][3] = 0;
+//        matrix[3][4] = 1;
+//        
+//        matrix[4][0] = 0;
+//        matrix[4][1] = 1;
+//        matrix[4][2] = 0;
+//        matrix[4][3] = 1;
+//        matrix[4][4] = 1;
+        
+        
+        // -------------- 15 
+//        matrix[0][0] = 0;
+//        matrix[0][1] = 1;
+//        matrix[0][2] = 1;
+//        matrix[0][3] = 1;
+//        matrix[0][4] = 1;
+//        
+//        matrix[1][0] = 1;
+//        matrix[1][1] = 0;
+//        matrix[1][2] = 0;
+//        matrix[1][3] = 0;
+//        matrix[1][4] = 1;
+//        
+//        matrix[2][0] = 1;
+//        matrix[2][1] = 1;
+//        matrix[2][2] = 0;
+//        matrix[2][3] = 1;
+//        matrix[2][4] = 0;
+//        
+//        matrix[3][0] = 0;
+//        matrix[3][1] = 1;
+//        matrix[3][2] = 0;
+//        matrix[3][3] = 1;
+//        matrix[3][4] = 1;
+//        
+//        matrix[4][0] = 0;
+//        matrix[4][1] = 1;
+//        matrix[4][2] = 1;
+//        matrix[4][3] = 1;
+//        matrix[4][4] = 0;
+        
 
-        matrix[0][0] = 1;
-        matrix[0][1] = 1;
-        matrix[0][2] = 1;
-        matrix[0][3] = 1;
-        matrix[0][4] = 1;
-        
-        matrix[1][0] = 1;
-        matrix[1][1] = 1;
-        matrix[1][2] = 1;
-        matrix[1][3] = 1;
-        matrix[1][4] = 1;
-        
-        matrix[2][0] = 1;
-        matrix[2][1] = 1;
-        matrix[2][2] = 1;
-        matrix[2][3] = 1;
-        matrix[2][4] = 1;
-        
-        matrix[3][0] = 1;
-        matrix[3][1] = 1;
-        matrix[3][2] = 1;
-        matrix[3][3] = 1;
-        matrix[3][4] = 1;
+        // ------------- 9
+//        matrix[0][0] = 1;
+//		matrix[0][1] = 1;
+//		matrix[0][2] = 1;
+//		matrix[0][3] = 0;
+//		matrix[0][4] = 1;
+//		
+//		matrix[1][0] = 0;
+//		matrix[1][1] = 0;
+//		matrix[1][2] = 1;
+//		matrix[1][3] = 0;
+//		matrix[1][4] = 0;
+//		  
+//		matrix[2][0] = 1;
+//		matrix[2][1] = 1;
+//		matrix[2][2] = 0;
+//		matrix[2][3] = 1;
+//		matrix[2][4] = 0;
+//		  
+//		matrix[3][0] = 0;
+//		matrix[3][1] = 1;
+//		matrix[3][2] = 1;
+//		matrix[3][3] = 0;
+//		matrix[3][4] = 0;
+//		  
+//		matrix[4][0] = 0;
+//		matrix[4][1] = 0;
+//		matrix[4][2] = 0;
+//		matrix[4][3] = 0;
+//		matrix[4][4] = 0;
+//		 
+//		matrix[5][0] = 0;
+//		matrix[5][1] = 1;
+//		matrix[5][2] = 0;
+//		matrix[5][3] = 0;
+//		matrix[5][4] = 0;
+//		 
+//		matrix[6][0] = 0;
+//		matrix[6][1] = 0;
+//		matrix[6][2] = 1;
+//		matrix[6][3] = 1;
+//		matrix[6][4] = 0;
+      
+        // ------------ 29
+        matrix[0][0] = 0;
+		matrix[0][1] = 1;
+		matrix[0][2] = 0;
+		matrix[0][3] = 0;
+		matrix[0][4] = 0;
+		matrix[0][5] = 0;
+		matrix[0][6] = 1;
+		matrix[0][7] = 1;
+		matrix[0][8] = 0;
+		
+		matrix[1][0] = 1;
+		matrix[1][1] = 1;
+		matrix[1][2] = 0;
+		matrix[1][3] = 0;
+		matrix[1][4] = 1;
+		matrix[1][5] = 0;
+		matrix[1][6] = 0;
+		matrix[1][7] = 0;
+		matrix[1][8] = 1;
+		  
+		matrix[2][0] = 0;
+		matrix[2][1] = 0;
+		matrix[2][2] = 0;
+		matrix[2][3] = 0;
+		matrix[2][4] = 1;
+		matrix[2][5] = 0;
+		matrix[2][6] = 1;
+		matrix[2][7] = 0;
+		matrix[2][8] = 0;
+		  
+		matrix[3][0] = 0;
+		matrix[3][1] = 1;
+		matrix[3][2] = 1;
+		matrix[3][3] = 1;
+		matrix[3][4] = 0;
+		matrix[3][5] = 1;
+		matrix[3][6] = 0;
+		matrix[3][7] = 1;
+		matrix[3][8] = 1;
+		  
+		matrix[4][0] = 0;
+		matrix[4][1] = 1;
+		matrix[4][2] = 1;
+		matrix[4][3] = 1;
+		matrix[4][4] = 0;
+		matrix[4][5] = 0;
+		matrix[4][6] = 1;
+		matrix[4][7] = 1;
+		matrix[4][8] = 0;
+		 
+		matrix[5][0] = 0;
+		matrix[5][1] = 1;
+		matrix[5][2] = 0;
+		matrix[5][3] = 1;
+		matrix[5][4] = 1;
+		matrix[5][5] = 0;
+		matrix[5][6] = 1;
+		matrix[5][7] = 1;
+		matrix[5][8] = 0;
+		 
+		matrix[6][0] = 0;
+		matrix[6][1] = 1;
+		matrix[6][2] = 0;
+		matrix[6][3] = 0;
+		matrix[6][4] = 1;
+		matrix[6][5] = 1;
+		matrix[6][6] = 0;
+		matrix[6][7] = 1;
+		matrix[6][8] = 1;
+		
+		matrix[7][0] = 1;
+		matrix[7][1] = 0;
+		matrix[7][2] = 1;
+		matrix[7][3] = 1;
+		matrix[7][4] = 1;
+		matrix[7][5] = 1;
+		matrix[7][6] = 0;
+		matrix[7][7] = 0;
+		matrix[7][8] = 0;
         
 //        for (int i = 0; i < n; i++) {
 //            String[] matrixRowItems = scanner.nextLine().split(" ");
