@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 public class SolutionV1 {
 
@@ -66,9 +67,9 @@ public class SolutionV1 {
 		int group = 0;
 		
 		if(cells.isEmpty()) {
-			group = 1;
+			group = 0;
 		} else {
-			group = cells.get(cells.size()-1).getGroup();
+			group = cells.stream().mapToInt(Cell::getGroup).max().getAsInt();
 		}
 		
 		return group;
@@ -111,6 +112,35 @@ public class SolutionV1 {
 			this.count = count;
 		}
 	}
+
+	/**
+	 * 
+	 * @param newCount
+	 * @param row
+	 * @param column
+	 * @param cells
+	 */
+	private static void updateBehindCellCount(int newCount, int row, int column, List<Cell> cells) {
+		cells.stream()
+		.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+		.findFirst()
+		.get().setCount(newCount);
+	}
+
+	/**
+	 * 
+	 * @param row
+	 * @param column
+	 * @param cells
+	 * @param newGroup
+	 */
+	private static void updateBehindCellGroup(int row, int column, List<Cell> cells, int newGroup) {
+		cells.stream()
+		.filter(c -> c.getRow() == row && c.getColumn() == column-1)
+		.findFirst()
+		.get()
+		.setGroup(newGroup);
+	}
 	
 	/**
      * 
@@ -132,6 +162,7 @@ public class SolutionV1 {
 		int maxColumn = matrix[row].length;
 		Cell cell = new Cell(row, column);
 		int lastTotal = 0;
+		Cell cellMaxCount = null;
 		
 		if(row == 0) {
 			if(column == 0 && matrix[row][column] == 1) {
@@ -150,76 +181,82 @@ public class SolutionV1 {
 		} else if(row > 0) {
 			if(column == 0 && matrix[row][column] == 1) { 
 				if(matrix[row-1][column] == 1) {
-					if(countAux[row-1][maxColumn-1] <= 1) {
+					List<Cell> list = cells.stream()
+							.filter(c -> c.getGroup() == getGroupTo(row-1, column, cells))
+							.collect(Collectors.toList());
+					
+					cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+					
+					if(countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()] <= 1) {
 						cell.setGroup(getGroupTo(row-1, column, cells));
 						lastTotal = countAux[row-1][column];
 						
 					} else {
-						cell.setGroup(getGroupTo(row-1, maxColumn-1, cells));
-						lastTotal = countAux[row-1][maxColumn-1];
+						cell.setGroup(cellMaxCount.getGroup());
+						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
 					}
-				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
-					if(countAux[row-1][maxColumn-1] <= 1) {
+				} else if(matrix[row-1][column+1] == 1) {
+					List<Cell> list = cells.stream()
+							.filter(c -> c.getGroup() == getGroupTo(row-1, column+1, cells))
+							.collect(Collectors.toList());
+					
+					cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+					
+					if(countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()] <= 1) {
 						cell.setGroup(getGroupTo(row-1, column+1, cells));
 						lastTotal = countAux[row-1][column+1];
 						
 					} else {
-						cell.setGroup(getGroupTo(row-1, maxColumn-1, cells));
-						lastTotal = countAux[row-1][maxColumn-1];
+						cell.setGroup(cellMaxCount.getGroup());
+						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
 					}
 				} else {
 					cell.setGroup(getLastGroupNumber(cells)+1);
 				}
 			} else if(column > 0 && matrix[row][column] == 1) {
-				Cell cellMaxCount = Collections.max(cells, Comparator.comparing(Cell::getCount));
-				
 				if(matrix[row][column-1] == 1) {
 					cell.setGroup(getGroupTo(row, column-1, cells));
 					lastTotal = countAux[row][column-1];
 					
 					if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+						List<Cell> list = cells.stream()
+								.filter(c -> c.getGroup() == getGroupTo(row-1, column+1, cells))
+								.collect(Collectors.toList());
+						
+						cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+						
 						if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
-							cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+							cell.setGroup(cellMaxCount.getGroup());
 							lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
 						} 
 						
 						if(getGroupTo(row, column-1, cells) != getGroupTo(row-1, column+1, cells)) {
 							countAux[row][column-1] = lastTotal + 2;
 							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get()
-							.setGroup(cell.getGroup());
-							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get().setCount(countAux[row][column-1]);
+							updateBehindCellGroup(row, column, cells, cell.getGroup());
+							updateBehindCellCount(lastTotal+2, row, column, cells);
 							
 							cell.setGroup(getGroupTo(row-1, column+1, cells));
 							lastTotal = countAux[row-1][column+1];
 						}
 						
 					} else if(matrix[row-1][column] == 1) {
+						List<Cell> list = cells.stream()
+								.filter(c -> c.getGroup() == getGroupTo(row-1, column, cells))
+								.collect(Collectors.toList());
+						
+						cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+						
 						if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
-							cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+							cell.setGroup(cellMaxCount.getGroup());
 							lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
 						} 
 
 						if(getGroupTo(row, column-1, cells) != getGroupTo(row-1, column, cells)) {
 							countAux[row][column-1] = lastTotal + 2;
 							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get()
-							.setGroup(cell.getGroup());
-							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get().setCount(countAux[row][column-1]);
+							updateBehindCellGroup(row, column, cells, cell.getGroup());
+							updateBehindCellCount(lastTotal+2, row, column, cells);
 							
 							cell.setGroup(getGroupTo(row-1, column, cells));
 							lastTotal = countAux[row-1][column];
@@ -227,24 +264,42 @@ public class SolutionV1 {
 					}
 					
 				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+					List<Cell> list = cells.stream()
+							.filter(c -> c.getGroup() == getGroupTo(row-1, column+1, cells))
+							.collect(Collectors.toList());
+					
+					cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+					
 					if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
-						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+						cell.setGroup(cellMaxCount.getGroup());
 						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
 					} else {
 						cell.setGroup(getGroupTo(row-1, column+1, cells));
 						lastTotal = countAux[row-1][column+1];
 					}
 				} else if(matrix[row-1][column] == 1) {
+					List<Cell> list = cells.stream()
+							.filter(c -> c.getGroup() == getGroupTo(row-1, column, cells))
+							.collect(Collectors.toList());
+					
+					cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+					
 					if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
-						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+						cell.setGroup(cellMaxCount.getGroup());
 						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
 					} else {
 						cell.setGroup(getGroupTo(row-1, column, cells));
 						lastTotal = countAux[row-1][column];
 					}
 				} else if(matrix[row-1][column-1] == 1) {
+					List<Cell> list = cells.stream()
+							.filter(c -> c.getGroup() == getGroupTo(row-1, column-1, cells))
+							.collect(Collectors.toList());
+					
+					cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+					
 					if(cellMaxCount.getGroup() == getGroupTo(row-1, column-1, cells)) {
-						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
+						cell.setGroup(cellMaxCount.getGroup());
 						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
 					} else {
 						cell.setGroup(getGroupTo(row-1, column-1, cells));
