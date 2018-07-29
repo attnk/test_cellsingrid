@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 public class SolutionV1 {
 
@@ -32,7 +33,6 @@ public class SolutionV1 {
 		
 		return result;
 	}
-
 
 	/**
 	 * 
@@ -66,9 +66,9 @@ public class SolutionV1 {
 		int group = 0;
 		
 		if(cells.isEmpty()) {
-			group = 1;
+			group = 0;
 		} else {
-			group = cells.get(cells.size()-1).getGroup();
+			group = cells.stream().mapToInt(Cell::getGroup).max().getAsInt();
 		}
 		
 		return group;
@@ -84,7 +84,6 @@ public class SolutionV1 {
 		public Cell(int row, int column) {
 			this.row = row;
 			this.column = column;
-			this.group = 0;
 		}
 
 		public int getColumn() {
@@ -111,6 +110,364 @@ public class SolutionV1 {
 			this.count = count;
 		}
 	}
+
+	/**
+	 * 
+	 * @param newCount
+	 * @param row
+	 * @param column
+	 * @param cells
+	 */
+	private static void updateConnectedCellCount(int newCount, int row, int column, List<Cell> cells) {
+		cells.stream()
+		.filter(c -> c.getRow() == row && c.getColumn() == column)
+		.findFirst()
+		.get().setCount(newCount);
+	}
+
+	/**
+	 * 
+	 * @param row
+	 * @param column
+	 * @param cells
+	 * @param newGroup
+	 */
+	private static void updateConnectedCellGroup(int row, int column, List<Cell> cells, int newGroup) {
+		cells.stream()
+		.filter(c -> c.getRow() == row && c.getColumn() == column)
+		.findFirst()
+		.get()
+		.setGroup(newGroup);
+	}
+	
+	/**
+	 * 
+	 * @param row
+	 * @param column
+	 * @param cells
+	 * @return
+	 */
+	private static Cell getMaxClountCell(int row, int column, List<Cell> cells) {
+		Cell cellMaxCount = null;
+		
+		List<Cell> list = cells.stream()
+				.filter(c -> c.getGroup() == getGroupTo(row, column, cells))
+				.collect(Collectors.toList());
+		
+		try {
+			cellMaxCount = Collections.max(list, Comparator.comparing(Cell::getCount));
+		} catch (ClassCastException | NoSuchElementException e) {
+			cellMaxCount = cells.stream()
+					.filter(c -> c.getRow() == row && c.getColumn() == column)
+					.findFirst().get();
+		}
+		
+		return cellMaxCount;
+	}
+
+	/**
+	 * 
+	 * @param countAux
+	 * @param row
+	 * @param column
+	 * @param cells
+	 * @param currentCell
+	 * @param cellMaxCount
+	 * @return
+	 */
+	private static int getLastTotal(
+			int[][] countAux, 
+			int row, 
+			int column, 
+			List<Cell> cells, 
+			Cell currentCell,
+			Cell cellMaxCount) {
+		int lastTotal;
+		
+		if(countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()] <= 1) {
+			currentCell.setGroup(getGroupTo(row, column, cells));
+			lastTotal = countAux[row][column];
+			
+		} else {
+			currentCell.setGroup(cellMaxCount.getGroup());
+			lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+		}
+		
+		return lastTotal;
+	}
+	
+	/**
+	 * 
+	 * @param countAux
+	 * @param row
+	 * @param column
+	 * @param cells
+	 * @param cell
+	 * @param lastTotal
+	 */
+	private static void updateRightUpDiagonalConnectedCell(
+			int[][] countAux, 
+			int row, 
+			int column, 
+			List<Cell> cells, 
+			Cell cell,
+			int lastTotal) {
+		
+		if(getGroupTo(cell.getRow()-1, cell.getColumn()+1, cells) != getGroupTo(row, column, cells)) {
+			countAux[cell.getRow()-1][cell.getColumn()+1] = lastTotal+2;
+			
+			updateConnectedCellGroup(cell.getRow()-1, cell.getColumn()+1, cells, cell.getGroup());
+			updateConnectedCellCount(lastTotal+1, cell.getRow()-1, cell.getColumn()+1, cells);
+		}
+	}
+
+	/**
+	 * 
+	 * @param matrix
+	 * @param countAux
+	 * @param row
+	 * @param column
+	 * @param cells
+	 * @param cell
+	 * @param lastTotal
+	 */
+	private static void updateLeftConnectedCells(
+			int[][] matrix, 
+			int[][] countAux, 
+			int row, 
+			int column,
+			List<Cell> cells, 
+			Cell cell, 
+			int lastTotal) {
+		
+		for (int i = cell.getColumn(); i > 0; i--) {
+			if(matrix[cell.getRow()][cell.getColumn()-(1*i)] == 1
+					&& getGroupTo(cell.getRow(), cell.getColumn()-(1*i), cells) != getGroupTo(row, column, cells)) {
+				
+				countAux[cell.getRow()][cell.getColumn()-(1*i)] = lastTotal+(1+i);
+				
+				updateConnectedCellGroup(cell.getRow(), cell.getColumn()-(1*i), cells, cell.getGroup());
+				updateConnectedCellCount(lastTotal+(1+i), cell.getRow(), cell.getColumn()-(1*i), cells);
+				
+				cell.setGroup(getGroupTo(row, column, cells));
+				lastTotal = countAux[row][column];
+			}
+		}
+	}
+
+	/**
+	 * 
+	 * @param countAux
+	 * @param cells
+	 * @param cell
+	 * @return
+	 */
+	private static int processLeftUpDiagonalConnectedCellLastTotal(
+			int[][] countAux, 
+			List<Cell> cells, 
+			Cell cell) {
+		
+		int lastTotal;
+		int row = cell.getRow();
+		int column = cell.getColumn();
+		Cell cellMaxCount = getMaxClountCell(row-1, column-1, cells);
+		
+		if(cellMaxCount.getGroup() == getGroupTo(row-1, column-1, cells)) {
+			cell.setGroup(cellMaxCount.getGroup());
+			lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+			
+		} else {
+			cell.setGroup(getGroupTo(row-1, column-1, cells));
+			lastTotal = countAux[row-1][column-1];
+		}
+		return lastTotal;
+	}
+
+	/**
+	 * 
+	 * @param countAux
+	 * @param cells
+	 * @param cell
+	 * @return
+	 */
+	private static int processUpConnectedCellLastTotal(
+			int[][] countAux, 
+			List<Cell> cells,
+			Cell cell) {
+		
+		int lastTotal;
+		Cell cellMaxCount;
+		int row = cell.getRow(); 
+		int column = cell.getColumn();
+		
+		cellMaxCount = getMaxClountCell(row-1, column, cells);
+		
+		if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
+			cell.setGroup(cellMaxCount.getGroup());
+			lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+			
+		} else {
+			cell.setGroup(getGroupTo(row-1, column, cells));
+			lastTotal = countAux[row-1][column];
+		}
+		return lastTotal;
+	}
+
+	/**
+	 * 
+	 * @param matrix
+	 * @param countAux
+	 * @param cells
+	 * @param cell
+	 * @return
+	 */
+	private static int processRightUpDiagonalConnectedCellLastTotal(
+			int[][] matrix, 
+			int[][] countAux, 
+			List<Cell> cells, 
+			Cell cell) {
+		
+		int lastTotal;
+		Cell cellMaxCount;
+		int row = cell.getRow();
+		int column = cell.getColumn();
+		
+		if(matrix[row-1][column-1] == 1) {
+			cellMaxCount = getMaxClountCell(row-1, column-1, cells);
+			
+			cell.setGroup(getGroupTo(row-1, column-1, cells));
+			lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+			
+			updateRightUpDiagonalConnectedCell(countAux, row-1, column-1, cells, cell, lastTotal);
+			
+		} else {
+			cellMaxCount = getMaxClountCell(row-1, column+1, cells);
+			
+			if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
+				cell.setGroup(cellMaxCount.getGroup());
+				lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+				
+			} else {
+				cell.setGroup(getGroupTo(row-1, column+1, cells));
+				lastTotal = countAux[row-1][column+1];
+			}
+		}
+		return lastTotal;
+	}
+
+	/**
+	 * 
+	 * @param matrix
+	 * @param countAux
+	 * @param cells
+	 * @param maxColumn
+	 * @param cell
+	 * @return
+	 */
+	private static int processLeftConnectedCellLastTotal(
+			int[][] matrix, 
+			int[][] countAux, 
+			List<Cell> cells, 
+			int maxColumn, 
+			Cell cell) {
+		
+		int lastTotal;
+		Cell cellMaxCount;
+		int row = cell.getRow(); 
+		int column =  cell.getColumn();
+		
+		cell.setGroup(getGroupTo(row, column-1, cells));
+		lastTotal = countAux[row][column-1];
+		
+		if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
+			cellMaxCount = getMaxClountCell(row-1, column+1, cells);
+			
+			if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
+				cell.setGroup(cellMaxCount.getGroup());
+				lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+			}
+			
+			updateLeftConnectedCells(matrix, countAux, row-1, column+1, cells, cell, lastTotal);
+			
+		} else if(matrix[row-1][column] == 1) {
+			cellMaxCount = getMaxClountCell(row-1, column, cells);
+			
+			if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
+				cell.setGroup(cellMaxCount.getGroup());
+				lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
+			} 
+		}
+		return lastTotal;
+	}
+
+	/**
+	 * 
+	 * @param matrix
+	 * @param countAux
+	 * @param cells
+	 * @param cell
+	 * @return
+	 */
+	private static int getFirstColumnLastTotal(
+			int[][] matrix, 
+			int[][] countAux, 
+			List<Cell> cells,
+			Cell cell) {
+		
+		int lastTotal = 0;
+		Cell cellMaxCount;
+		int row = cell.getRow(); 
+		int column = cell.getColumn();
+		
+		if(matrix[row-1][column] == 1) {
+			cellMaxCount = getMaxClountCell(row-1, column, cells);
+			lastTotal = getLastTotal(countAux, row-1, column, cells, cell, cellMaxCount);
+			
+		} else if(matrix[row-1][column+1] == 1) {
+			cellMaxCount = getMaxClountCell(row-1, column+1, cells);
+			lastTotal = getLastTotal(countAux, row-1, column+1, cells, cell, cellMaxCount);
+			
+		} else {
+			cell.setGroup(getLastGroupNumber(cells)+1);
+		}
+		
+		return lastTotal;
+	}
+
+	/**
+	 * 
+	 * @param matrix
+	 * @param countAux
+	 * @param cells
+	 * @param cell
+	 * @return
+	 */
+	private static int getFirstRowLastTotal(
+			int[][] matrix, 
+			int[][] countAux, 
+			List<Cell> cells,
+			Cell cell) {
+		
+		int lastTotal = 0;
+		int row = cell.getRow();
+		int column = cell.getColumn();
+		
+		if(column == 0 && matrix[row][column] == 1) {
+			cell.setGroup(1);
+			lastTotal = countAux[row][column];
+			
+		} else if(column > 0 && matrix[row][column] == 1) {
+			if(matrix[row][column-1] == 1) {
+				cell.setGroup(getGroupTo(row, column-1, cells));
+				lastTotal = countAux[row][column-1];
+				
+			} else {
+				cell.setGroup(getLastGroupNumber(cells)+1);
+			}
+		}
+		
+		return lastTotal;
+	}
 	
 	/**
      * 
@@ -134,122 +491,26 @@ public class SolutionV1 {
 		int lastTotal = 0;
 		
 		if(row == 0) {
-			if(column == 0 && matrix[row][column] == 1) {
-				cell.setGroup(1);
-				lastTotal = countAux[row][column];
-				
-			} else if(column > 0 && matrix[row][column] == 1) {
-				if(matrix[row][column-1] == 1) {
-					cell.setGroup(getGroupTo(row, column-1, cells));
-					lastTotal = countAux[row][column-1];
-					
-				} else {
-					cell.setGroup(getLastGroupNumber(cells)+1);
-				}
-			}
+			lastTotal = getFirstRowLastTotal(matrix, countAux, cells, cell);
+			
 		} else if(row > 0) {
-			if(column == 0 && matrix[row][column] == 1) { 
-				if(matrix[row-1][column] == 1) {
-					if(countAux[row-1][maxColumn-1] <= 1) {
-						cell.setGroup(getGroupTo(row-1, column, cells));
-						lastTotal = countAux[row-1][column];
-						
-					} else {
-						cell.setGroup(getGroupTo(row-1, maxColumn-1, cells));
-						lastTotal = countAux[row-1][maxColumn-1];
-					}
-				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
-					if(countAux[row-1][maxColumn-1] <= 1) {
-						cell.setGroup(getGroupTo(row-1, column+1, cells));
-						lastTotal = countAux[row-1][column+1];
-						
-					} else {
-						cell.setGroup(getGroupTo(row-1, maxColumn-1, cells));
-						lastTotal = countAux[row-1][maxColumn-1];
-					}
-				} else {
-					cell.setGroup(getLastGroupNumber(cells)+1);
-				}
-			} else if(column > 0 && matrix[row][column] == 1) {
-				Cell cellMaxCount = Collections.max(cells, Comparator.comparing(Cell::getCount));
+			if(column == 0 && matrix[row][column] == 1) {
+				lastTotal = getFirstColumnLastTotal(matrix, countAux, cells, cell);
 				
+			} else if(column > 0 && matrix[row][column] == 1) {
 				if(matrix[row][column-1] == 1) {
-					cell.setGroup(getGroupTo(row, column-1, cells));
-					lastTotal = countAux[row][column-1];
-					
-					if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
-						if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
-							cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
-							lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
-						} 
-						
-						if(getGroupTo(row, column-1, cells) != getGroupTo(row-1, column+1, cells)) {
-							countAux[row][column-1] = lastTotal + 2;
-							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get()
-							.setGroup(cell.getGroup());
-							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get().setCount(countAux[row][column-1]);
-							
-							cell.setGroup(getGroupTo(row-1, column+1, cells));
-							lastTotal = countAux[row-1][column+1];
-						}
-						
-					} else if(matrix[row-1][column] == 1) {
-						if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
-							cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
-							lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
-						} 
-
-						if(getGroupTo(row, column-1, cells) != getGroupTo(row-1, column, cells)) {
-							countAux[row][column-1] = lastTotal + 2;
-							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get()
-							.setGroup(cell.getGroup());
-							
-							cells.stream()
-							.filter(c -> c.getRow() == row && c.getColumn() == column-1)
-							.findFirst()
-							.get().setCount(countAux[row][column-1]);
-							
-							cell.setGroup(getGroupTo(row-1, column, cells));
-							lastTotal = countAux[row-1][column];
-						}
-					}
+					lastTotal = processLeftConnectedCellLastTotal(
+							matrix, countAux, cells, maxColumn,cell);
 					
 				} else if(column < maxColumn-1 && matrix[row-1][column+1] == 1) {
-					if(cellMaxCount.getGroup() == getGroupTo(row-1, column+1, cells)) {
-						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
-						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
-					} else {
-						cell.setGroup(getGroupTo(row-1, column+1, cells));
-						lastTotal = countAux[row-1][column+1];
-					}
+					lastTotal = processRightUpDiagonalConnectedCellLastTotal(
+							matrix, countAux, cells, cell);
+					
 				} else if(matrix[row-1][column] == 1) {
-					if(cellMaxCount.getGroup() == getGroupTo(row-1, column, cells)) {
-						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
-						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
-					} else {
-						cell.setGroup(getGroupTo(row-1, column, cells));
-						lastTotal = countAux[row-1][column];
-					}
+					lastTotal = processUpConnectedCellLastTotal(countAux, cells, cell);
+					
 				} else if(matrix[row-1][column-1] == 1) {
-					if(cellMaxCount.getGroup() == getGroupTo(row-1, column-1, cells)) {
-						cell.setGroup(getGroupTo(cellMaxCount.getRow(), cellMaxCount.getColumn(), cells));
-						lastTotal = countAux[cellMaxCount.getRow()][cellMaxCount.getColumn()];
-					} else {
-						cell.setGroup(getGroupTo(row-1, column-1, cells));
-						lastTotal = countAux[row-1][column-1];
-					}
+					lastTotal = processLeftUpDiagonalConnectedCellLastTotal(countAux, cells, cell);
 				} else {
 					cell.setGroup(getLastGroupNumber(cells)+1);
 				}
@@ -259,7 +520,7 @@ public class SolutionV1 {
 		
 		return lastTotal;
 	}
-	
+
     // Complete the connectedCell function below.
     static int connectedCell(int[][] matrix) {
     	int max = 0, 
@@ -288,16 +549,8 @@ public class SolutionV1 {
     	return max;
     }
 
-//    private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) throws IOException {
-//        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter("C:\\PROGRAMAS\\DEV\\PROJETOS\\JAVA_WORKSPACE\\tests\\test_ammo_varejo\\test_cellsingrid\\test_file.txt"));
-//
-//        int n = scanner.nextInt();
-//        scanner.skip("(\r\n|[\n\r\u2028\u2029\u0085])?");
-//
-//        int m = scanner.nextInt();
-//        scanner.skip("(\r\n|[\n\r\u2028\u2029\u0085])?");
 
     	int n = 8;
     	int m = 9;
@@ -492,17 +745,7 @@ public class SolutionV1 {
 		matrix[7][7] = 0;
 		matrix[7][8] = 0;
         
-//        for (int i = 0; i < n; i++) {
-//            String[] matrixRowItems = scanner.nextLine().split(" ");
-//            scanner.skip("(\r\n|[\n\r\u2028\u2029\u0085])?");
-//
-//            for (int j = 0; j < m; j++) {
-//                int matrixItem = Integer.parseInt(matrixRowItems[j]);
-//                matrix[i][j] = matrixItem;
-//            }
-//        }
-
-        // TODO: só para print da matriz usada
+        // só para print da matriz usada
         for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix[i].length; j++) {
 				System.out.print(matrix[i][j]);
@@ -513,16 +756,8 @@ public class SolutionV1 {
 
     	System.out.println("\n");
         
-        // para o teste aqui deveria ser result = 5
         int result = connectedCell(matrix);
 
         System.out.println(result);
-        
-//        bufferedWriter.write(String.valueOf(result));
-//        bufferedWriter.newLine();
-//
-//        bufferedWriter.close();
-//
-//        scanner.close();
     }
 }
