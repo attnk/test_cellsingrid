@@ -25,8 +25,6 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 ```
 
-Sendo que os métodos `getLastTotal` e `matrixToArray`, são métodos (privados criados após refatoração) criados com a finalidade de diminnuir um pouco a complexidade da leitura e manutenção na solução criada.
-
 [//]:#
 
 [Connected Cells in a Grid]:<https://www.hackerrank.com/challenges/connected-cell-in-a-grid/problem>
